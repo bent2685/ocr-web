@@ -1,0 +1,17 @@
+node_modules
+dist
+.DS_Store
+*.log
+.turbo
+.cache
+coverage
+
+# 模型文件不入库（统一走 GitHub Release 分发）
+**/models/*.onnx
+**/models/*.txt
+!**/models/.gitkeep
+
+# 编辑器
+.vscode/*
+!.vscode/extensions.json
+.idea

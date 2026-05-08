@@ -1,0 +1,34 @@
+{
+  "name": "@ocr-web/core",
+  "version": "0.0.0",
+  "description": "PP-OCR inference engine for browser & Electron (backend-agnostic core)",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist", "README.md"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --sourcemap --clean",
+    "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "peerDependencies": {
+    "onnxruntime-web": "^1.25.0"
+  },
+  "devDependencies": {
+    "onnxruntime-web": "^1.25.0",
+    "tsup": "^8.3.0",
+    "vitest": "^2.1.0"
+  },
+  "keywords": ["ocr", "ppocr", "ppocrv5", "onnx", "browser", "electron", "wasm"],
+  "license": "MIT"
+}
