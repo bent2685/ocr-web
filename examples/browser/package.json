@@ -10,6 +10,7 @@
 	"dependencies": {
 		"@ocr-web/core": "workspace:*",
 		"@ocr-web/models-ppocrv5": "workspace:*",
+		"@ocr-web/pdf": "workspace:*",
 		"onnxruntime-web": "^1.25.0"
 	},
 	"devDependencies": {

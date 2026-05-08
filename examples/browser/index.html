@@ -19,33 +19,62 @@
 			.line { display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px dotted #eee; font-size: 13px; }
 			.line .conf { color: #888; min-width: 50px; }
 			.line .text { flex: 1; }
+			.tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+			.tab { padding: 6px 14px; cursor: pointer; border: 1px solid #ddd; border-radius: 6px 6px 0 0; background: #f8f8f8; }
+			.tab.active { background: white; border-bottom-color: white; font-weight: 600; }
+			.section { display: none; }
+			.section.active { display: block; }
+			.page-card { border: 1px solid #eee; padding: 8px; margin: 8px 0; border-radius: 6px; }
+			.page-card h4 { margin: 0 0 4px; font-size: 14px; color: #555; }
 		</style>
 	</head>
 	<body>
 		<h1>ocr-web — PP-OCRv5 Browser Demo</h1>
-		<p>使用 <code>@ocr-web/core</code> + <code>@ocr-web/models-ppocrv5</code> 在浏览器跑 PP-OCRv5。</p>
+		<p>使用 <code>@ocr-web/core</code>（worker 模式）+ <code>@ocr-web/models-ppocrv5</code> + <code>@ocr-web/pdf</code>。</p>
 
 		<div class="panel">
 			<div id="modelSource" style="margin-bottom: 8px; font-size: 13px; color: #555"></div>
-			<input type="file" id="file" accept="image/*" />
-			<button id="run" disabled>Recognize</button>
-			<div class="status" id="status">初始化中…</div>
+			<div class="status" id="globalStatus">初始化中…</div>
 		</div>
 
-		<h2>结果</h2>
-		<div class="row">
-			<div class="panel">
-				<h3>原图（叠加检测框）</h3>
-				<canvas id="overlay"></canvas>
-			</div>
-			<div class="panel">
-				<h3>识别行</h3>
-				<div id="lines"></div>
-			</div>
+		<div class="tabs">
+			<div class="tab active" data-tab="img">🖼️ 图片识别</div>
+			<div class="tab" data-tab="pdf">📄 PDF 提取</div>
 		</div>
 
-		<h2>fullText</h2>
-		<div class="panel"><pre id="fullText"></pre></div>
+		<div class="section active" data-section="img">
+			<div class="panel">
+				<input type="file" id="imgFile" accept="image/*" />
+				<button id="runImg" disabled>Recognize</button>
+				<div class="status" id="imgStatus">等待选图…</div>
+			</div>
+			<div class="row" style="margin-top: 16px">
+				<div class="panel">
+					<h3>原图（叠加检测框）</h3>
+					<canvas id="overlay"></canvas>
+				</div>
+				<div class="panel">
+					<h3>识别行</h3>
+					<div id="lines"></div>
+				</div>
+			</div>
+			<h2>fullText</h2>
+			<div class="panel"><pre id="fullText"></pre></div>
+		</div>
+
+		<div class="section" data-section="pdf">
+			<div class="panel">
+				<input type="file" id="pdfFile" accept="application/pdf,.pdf" />
+				<label style="margin-left: 12px; font-size: 13px">
+					页 (留空 = 全部，单数 = 单页，逗号分隔 = 多页):
+					<input type="text" id="pdfPages" placeholder="all / 1 / 1,3,5" style="width: 140px" />
+				</label>
+				<button id="runPdf" disabled>Extract</button>
+				<div class="status" id="pdfStatus">等待选 PDF…</div>
+			</div>
+			<h2>PDF 提取结果</h2>
+			<div class="panel" id="pdfResult"></div>
+		</div>
 
 		<script type="module" src="/src/main.ts"></script>
 	</body>
