@@ -8,6 +8,12 @@ export type ImageInput =
 
 export type ModelSource = string | ArrayBuffer | Uint8Array;
 
+export type LoadProgress = {
+	loaded: number;
+	total: number;
+	file: string;
+};
+
 export interface OcrEngineOptions {
 	models: {
 		detection: ModelSource;
@@ -18,6 +24,7 @@ export interface OcrEngineOptions {
 	runtime?: "wasm" | "webgpu";
 	wasmPaths?: string | Record<string, string>;
 	numThreads?: number;
+	onProgress?: (p: LoadProgress) => void;
 }
 
 export interface RecognizeOptions {

@@ -1,15 +1,16 @@
-import { OcrEngine } from "@ocr-web/core";
+import { OcrEngineWorker } from "@ocr-web/core";
+import OcrWorker from "@ocr-web/core/worker?worker";
 import { ppocrV5 } from "@ocr-web/models-ppocrv5";
 
-// Default: use models from local public/models if present (faster dev iteration),
-// fall back to GitHub Release URLs from @ocr-web/models-ppocrv5
-const USE_LOCAL = await fetch("/models/ppocrv5_det.onnx", { method: "HEAD" })
+const BASE = import.meta.env.BASE_URL; // "/" in dev, "/ocr-web/" on GH Pages
+
+const USE_LOCAL = await fetch(`${BASE}models/ppocrv5_det.onnx`, { method: "HEAD" })
 	.then((r) => r.ok)
 	.catch(() => false);
 
-const detUrl = USE_LOCAL ? "/models/ppocrv5_det.onnx" : ppocrV5.detection;
-const recUrl = USE_LOCAL ? "/models/ppocrv5_rec.onnx" : ppocrV5.recognition;
-const dictUrl = USE_LOCAL ? "/models/ppocrv5_dict.txt" : ppocrV5.dictionary;
+const detUrl = USE_LOCAL ? `${BASE}models/ppocrv5_det.onnx` : ppocrV5.detection;
+const recUrl = USE_LOCAL ? `${BASE}models/ppocrv5_rec.onnx` : ppocrV5.recognition;
+const dictUrl = USE_LOCAL ? `${BASE}models/ppocrv5_dict.txt` : ppocrV5.dictionary;
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const fileInput = $<HTMLInputElement>("file");
@@ -19,9 +20,9 @@ const overlayCanvas = $<HTMLCanvasElement>("overlay");
 const linesEl = $<HTMLDivElement>("lines");
 const fullTextEl = $<HTMLPreElement>("fullText");
 const modelSourceEl = $<HTMLDivElement>("modelSource");
-modelSourceEl.textContent = `模型源：${USE_LOCAL ? "local /models/" : "GitHub Release"}`;
+modelSourceEl.textContent = `模型源：${USE_LOCAL ? "local /models/" : "jsDelivr CDN"}（worker 模式）`;
 
-let engine: OcrEngine | null = null;
+let engine: OcrEngineWorker | null = null;
 let currentBitmap: ImageBitmap | null = null;
 
 function setStatus(msg: string, kind: "" | "ok" | "error" = "") {
@@ -30,16 +31,29 @@ function setStatus(msg: string, kind: "" | "ok" | "error" = "") {
 }
 
 async function init() {
-	setStatus("加载模型中（首次约 5-10s，会缓存）…");
+	setStatus("加载模型中…");
 	try {
 		const t0 = performance.now();
-		engine = await OcrEngine.create({
+		// track loaded bytes per file
+		const loaded: Record<string, number> = {};
+		const totals: Record<string, number> = {};
+		engine = await OcrEngineWorker.create({
+			worker: new OcrWorker(),
 			models: { detection: detUrl, recognition: recUrl },
 			dictionary: dictUrl,
-			wasmPaths: "/ort/",
+			wasmPaths: `${location.origin}${BASE}ort/`,
+			onProgress: ({ loaded: l, total, file }) => {
+				loaded[file] = l;
+				totals[file] = total;
+				const sumL = Object.values(loaded).reduce((a, b) => a + b, 0);
+				const sumT = Object.values(totals).reduce((a, b) => a + b, 0);
+				setStatus(
+					`加载中 ${file}: ${(sumL / 1024 / 1024).toFixed(1)} / ${(sumT / 1024 / 1024).toFixed(1)} MB`,
+				);
+			},
 		});
 		setStatus(`✅ 引擎就绪（${(performance.now() - t0).toFixed(0)}ms）。选择图片开始识别。`, "ok");
-		(window as unknown as { __engine: OcrEngine }).__engine = engine;
+		(window as unknown as { __engine: OcrEngineWorker }).__engine = engine;
 	} catch (err) {
 		setStatus(`❌ 初始化失败：${(err as Error).message}`, "error");
 		console.error(err);
@@ -76,7 +90,7 @@ function renderLines(lines: { text: string; confidence: number }[]) {
 async function run() {
 	if (!engine || !currentBitmap) return;
 	runBtn.disabled = true;
-	setStatus("识别中…");
+	setStatus("识别中…（worker 跑，UI 不卡）");
 	try {
 		const result = await engine.recognize(currentBitmap);
 		drawOverlay(

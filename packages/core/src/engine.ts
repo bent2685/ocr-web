@@ -47,9 +47,12 @@ export class OcrEngine {
 	static async create(opts: OcrEngineOptions): Promise<OcrEngine> {
 		configureOrt({ wasmPaths: opts.wasmPaths, numThreads: opts.numThreads });
 		const runtime = opts.runtime ?? "wasm";
+		const onProgress = opts.onProgress
+			? (loaded: number, total: number, file: string) => opts.onProgress!({ loaded, total, file })
+			: undefined;
 		const [detSession, recSession, dict] = await Promise.all([
-			createSession(opts.models.detection, runtime),
-			createSession(opts.models.recognition, runtime),
+			createSession(opts.models.detection, runtime, "detection", onProgress),
+			createSession(opts.models.recognition, runtime, "recognition", onProgress),
 			fetchDictionary(opts.dictionary),
 		]);
 		return new OcrEngine(new DetectionModule(detSession), new RecognitionModule(recSession, dict), [
