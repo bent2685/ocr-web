@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>ocr-web example — browser</title>
+		<style>
+			body { font-family: -apple-system, system-ui, sans-serif; margin: 24px; max-width: 1400px; }
+			.row { display: flex; gap: 16px; flex-wrap: wrap; }
+			.panel { border: 1px solid #ddd; padding: 12px; border-radius: 8px; flex: 1; min-width: 300px; }
+			canvas { border: 1px solid #999; display: block; max-width: 100%; height: auto; }
+			pre { background: #f4f4f4; padding: 8px; border-radius: 4px; max-height: 400px; overflow: auto; font-size: 13px; white-space: pre-wrap; }
+			button { padding: 8px 16px; font-size: 14px; cursor: pointer; margin-right: 8px; }
+			button:disabled { opacity: 0.5; cursor: not-allowed; }
+			.status { color: #555; font-size: 13px; margin: 8px 0; }
+			.error { color: #c00; }
+			.ok { color: #060; }
+			h2 { margin-top: 24px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+			.line { display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px dotted #eee; font-size: 13px; }
+			.line .conf { color: #888; min-width: 50px; }
+			.line .text { flex: 1; }
+		</style>
+	</head>
+	<body>
+		<h1>ocr-web — PP-OCRv5 Browser Demo</h1>
+		<p>使用 <code>@ocr-web/core</code> + <code>@ocr-web/models-ppocrv5</code> 在浏览器跑 PP-OCRv5。</p>
+
+		<div class="panel">
+			<div id="modelSource" style="margin-bottom: 8px; font-size: 13px; color: #555"></div>
+			<input type="file" id="file" accept="image/*" />
+			<button id="run" disabled>Recognize</button>
+			<div class="status" id="status">初始化中…</div>
+		</div>
+
+		<h2>结果</h2>
+		<div class="row">
+			<div class="panel">
+				<h3>原图（叠加检测框）</h3>
+				<canvas id="overlay"></canvas>
+			</div>
+			<div class="panel">
+				<h3>识别行</h3>
+				<div id="lines"></div>
+			</div>
+		</div>
+
+		<h2>fullText</h2>
+		<div class="panel"><pre id="fullText"></pre></div>
+
+		<script type="module" src="/src/main.ts"></script>
+	</body>
+</html>
