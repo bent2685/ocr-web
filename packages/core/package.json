@@ -1,6 +1,10 @@
 {
 	"name": "@ocr-web/core",
-	"version": "0.0.0",
+	"version": "0.1.0",
+	"publishConfig": { "access": "public" },
+	"repository": { "type": "git", "url": "https://github.com/bent2685/ocr-web.git", "directory": "packages/core" },
+	"homepage": "https://github.com/bent2685/ocr-web#readme",
+	"bugs": "https://github.com/bent2685/ocr-web/issues",
 	"description": "PP-OCR inference engine for browser & Electron (backend-agnostic core)",
 	"type": "module",
 	"main": "./dist/index.cjs",
