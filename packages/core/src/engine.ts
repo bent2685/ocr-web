@@ -21,15 +21,23 @@ const DEFAULT_RECOGNIZE_OPTS: Required<RecognizeOptions> = {
 	minBoxSize: 3,
 };
 
+// Distinguish "URL/path to fetch" from "raw dictionary text".
+// Path-like prefixes are URLs (relative). Otherwise try `new URL` so any
+// real protocol (http/https/file/blob/data/chrome-extension/...) is recognized.
+// Raw dictionary text is multi-line and won't parse as URL → fallthrough.
+export function isFetchableSource(s: string): boolean {
+	if (s.startsWith("/") || s.startsWith("./") || s.startsWith("../")) return true;
+	try {
+		new URL(s);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 async function fetchDictionary(source: string | string[]): Promise<readonly string[]> {
 	if (Array.isArray(source)) return loadDictionary(source);
-	if (
-		source.startsWith("http://") ||
-		source.startsWith("https://") ||
-		source.startsWith("/") ||
-		source.startsWith("./") ||
-		source.startsWith("../")
-	) {
+	if (isFetchableSource(source)) {
 		const res = await fetch(source);
 		if (!res.ok) throw new Error(`Failed to fetch dictionary ${source} (${res.status})`);
 		return loadDictionary(await res.text());

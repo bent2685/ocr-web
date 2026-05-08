@@ -144,6 +144,18 @@ wasmPaths: `${location.origin}${import.meta.env.BASE_URL}ort/`,
   - vite-plugin-static-copy 时按文件名过滤，只拷需要的
 - jsDelivr CDN 上的 wasm 浏览器会缓存，只首次下载
 
+### Electron / `file://` 下 dictionary 加载怪异（≤ v0.2.0）
+
+v0.2.0 及以前 `fetchDictionary` 只识别 `http://` `https://` `/` `./` `../`，**`file://` 不在白名单**——会把整个 URL 字符串当字典内容用，识别全错。
+
+- **修复**：升级到 `@ocr-web/core@0.2.1+`（用 `new URL()` 判断，覆盖所有协议）
+- **临时 workaround**：自己 fetch + `text()` 后传 `string[]`：
+  ```ts
+  const dictText = await (await fetch(dictUrl)).text();
+  const dict = dictText.split("\n").filter(Boolean);
+  await OcrEngine.create({ ..., dictionary: dict });
+  ```
+
 ## 我看了所有文档还是不行
 
 提 issue：https://github.com/bent2685/ocr-web/issues
