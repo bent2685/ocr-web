@@ -1,6 +1,6 @@
 # @ocr-web/models-ppocrv5
 
-PP-OCRv5 mobile 模型 URL（det + rec + dict），托管在本仓库 GitHub Release。
+PP-OCRv5 mobile 模型 URL（det + rec + dict），托管在仓库 git 中通过 jsDelivr CDN 分发（自带 CORS、全球加速、文件级缓存）。
 
 ## 用法
 

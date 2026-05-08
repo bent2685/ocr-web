@@ -6,10 +6,10 @@ dist
 .cache
 coverage
 
-# 模型文件不入库（统一走 GitHub Release 分发）
-**/models/*.onnx
-**/models/*.txt
-!**/models/.gitkeep
+# example 本地缓存的模型不入库；仓库根 /models/ 是权威副本（走 jsDelivr CDN）
+examples/*/public/models/*.onnx
+examples/*/public/models/*.txt
+!examples/*/public/models/.gitkeep
 
 # 编辑器
 .vscode/*
