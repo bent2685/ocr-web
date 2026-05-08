@@ -1,27 +1,47 @@
 # ocr-web
 
-PP-OCRv5 浏览器/Electron 端推理库。基于 onnxruntime-web，无 native binding，无 sidecar。
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+[![@ocr-web/core](https://img.shields.io/npm/v/@ocr-web/core.svg?label=%40ocr-web%2Fcore)](https://www.npmjs.com/package/@ocr-web/core)
+[![@ocr-web/pdf](https://img.shields.io/npm/v/@ocr-web/pdf.svg?label=%40ocr-web%2Fpdf)](https://www.npmjs.com/package/@ocr-web/pdf)
+[![@ocr-web/models-ppocrv5](https://img.shields.io/npm/v/@ocr-web/models-ppocrv5.svg?label=models-ppocrv5)](https://www.npmjs.com/package/@ocr-web/models-ppocrv5)
 
-> 状态：v0.1.0-dev — 核心管线已跑通，端到端可用。完整设计见 [`ocr-web-sdd.md`](./ocr-web-sdd.md)。
+PP-OCRv5 inference for the browser and Electron. Pure JavaScript on top of [`onnxruntime-web`](https://github.com/microsoft/onnxruntime) — no native bindings, no sidecar, no server required.
 
-## 包
+> 🇨🇳 [中文 README](./README.zh-CN.md) · 📚 [Documentation](./docs/README.md) ([English](./docs/en/getting-started.md) / [中文](./docs/zh-CN/getting-started.md)) · 🔗 [Live demo](https://bent2685.github.io/ocr-web/)
 
-| 包 | 说明 |
+## Features
+
+- **PP-OCRv5 detection + recognition pipeline** — DBNet detection, CRNN recognition with CTC greedy decoding, multilingual dictionary (18,384 characters covering CJK, Latin, digits, common punctuation, and emoji).
+- **Web Worker mode** — runs the full inference pipeline off the main thread; UI stays responsive during recognition.
+- **Streaming model load progress** — byte-level `onProgress` callback for `detection` and `recognition` model fetches.
+- **Recognition batching** — multiple text lines are padded and run as a single `[N, 3, 32, W]` rec batch.
+- **Flexible image inputs** — `HTMLCanvasElement`, `OffscreenCanvas`, `ImageData`, `ImageBitmap`, `Blob` / `File`, or a URL string.
+- **PDF text extraction** — `@ocr-web/pdf` renders each page with [`pdfjs-dist`](https://github.com/mozilla/pdf.js) and OCRs it; supports single-page, all-page, or selected-page extraction with per-page progress.
+- **Tunable post-processing** — `detThreshold`, `detBoxThreshold`, `unclipRatio`, `maxSideLen`, `minBoxSize` are all exposed per `recognize()` call.
+- **Model URLs as a separate package** — `@ocr-web/models-ppocrv5` ships only URL constants (jsDelivr CDN, CORS-enabled). You can also pass any `ArrayBuffer` / `Uint8Array` if you host or gate models yourself.
+- **Small, tree-shakeable, ESM + CJS** — the core JS bundle is on the order of tens of KB; `onnxruntime-web` is a peer dependency.
+
+## Packages
+
+| Package | Description |
 |---|---|
-| [`@ocr-web/core`](./packages/core) | 引擎主体（det + rec + CTC，Worker 支持，纯 JS 几何，~20KB ESM） |
-| [`@ocr-web/models-ppocrv5`](./packages/models-ppocrv5) | PP-OCRv5 模型 URL（jsDelivr CDN，带 CORS） |
-| [`@ocr-web/pdf`](./packages/pdf) | PDF 文本提取（pdfjs-dist 渲染 + OCR） |
+| [`@ocr-web/core`](./packages/core) | Inference engine — detection + recognition + CTC, main-thread (`OcrEngine`) and Worker (`OcrEngineWorker`) entry points |
+| [`@ocr-web/models-ppocrv5`](./packages/models-ppocrv5) | PP-OCRv5 model URLs (detection, recognition, dictionary) hosted on jsDelivr |
+| [`@ocr-web/pdf`](./packages/pdf) | PDF text extraction (pdfjs-dist render + OCR) |
 
-## 快速开始
+## Installation
 
 ```bash
-pnpm install
-pnpm example       # 启动 examples/browser，浏览器打开 http://localhost:5181
-pnpm test          # 运行单元测试
-pnpm build         # 构建所有 packages
+pnpm add @ocr-web/core @ocr-web/models-ppocrv5 onnxruntime-web
+# Optional, for PDF extraction:
+pnpm add @ocr-web/pdf
 ```
 
-## 用法
+`onnxruntime-web` is a **peer dependency** and must be installed explicitly. Its `*.wasm` files must be served from a path you tell the engine about via `wasmPaths` (default `/`). See [Installation & build configuration](./docs/en/installation.md) for Vite, Webpack, Next.js, Electron, and CDN setups.
+
+## Usage
+
+### Main-thread engine (demos and one-off scripts)
 
 ```ts
 import { OcrEngine } from "@ocr-web/core";
@@ -33,56 +53,110 @@ const engine = await OcrEngine.create({
     recognition: ppocrV5.recognition,
   },
   dictionary: ppocrV5.dictionary,
-  wasmPaths: "/ort/", // 你需要让 onnxruntime-web 的 wasm 文件可被加载到这里
+  wasmPaths: "/ort/",
 });
 
-const result = await engine.recognize(canvas); // 也支持 Blob / ImageBitmap / ImageData / URL
+const result = await engine.recognize(canvas);
 console.log(result.fullText);
 console.log(result.lines); // [{ text, box, confidence }, ...]
 
 await engine.dispose();
 ```
 
-## 仓库结构
+### Worker engine (recommended for production)
+
+```ts
+import { OcrEngineWorker } from "@ocr-web/core";
+import OcrWorker from "@ocr-web/core/worker?worker"; // Vite syntax
+import { ppocrV5 } from "@ocr-web/models-ppocrv5";
+
+const engine = await OcrEngineWorker.create({
+  worker: new OcrWorker(),
+  models: {
+    detection: ppocrV5.detection,
+    recognition: ppocrV5.recognition,
+  },
+  dictionary: ppocrV5.dictionary,
+  wasmPaths: `${location.origin}/ort/`,
+  onProgress: ({ file, loaded, total }) => {
+    console.log(`${file}: ${(loaded / total * 100).toFixed(0)}%`);
+  },
+});
+
+const result = await engine.recognize(blob);
+await engine.dispose();
+```
+
+### PDF extraction
+
+```ts
+import { PdfOcr } from "@ocr-web/pdf";
+
+const pdfOcr = new PdfOcr({ engine });
+
+const text = await pdfOcr.recognize(file, 1);          // single page → string
+const all  = await pdfOcr.recognize(file);             // all pages → { [page]: { text, lines, durationMs } }
+const some = await pdfOcr.recognize(file, [1, 3, 5]);  // selected pages
+```
+
+For framework integrations (React, Vue, Next.js, Electron) see [Recipes](./docs/en/recipes.md).
+
+## Repository layout
 
 ```
 ocr-web/
 ├── packages/
 │   ├── core/                # @ocr-web/core
-│   └── models-ppocrv5/      # @ocr-web/models-ppocrv5
+│   ├── models-ppocrv5/      # @ocr-web/models-ppocrv5
+│   └── pdf/                 # @ocr-web/pdf
 ├── examples/
-│   └── browser/             # 完整浏览器 demo
-├── ocr-web-sdd.md           # 解决方案设计文档
-└── README.md
+│   └── browser/             # full browser demo
+├── docs/
+│   ├── en/                  # English documentation
+│   └── zh-CN/               # 中文文档
+├── models/                  # PP-OCRv5 ONNX assets distributed via jsDelivr
+├── README.md                # English README
+└── README.zh-CN.md          # 中文 README
 ```
 
-## Phase 1 完成情况
+## Development
 
-- ✅ det/rec 全链路（cls 跳过，PP-OCRv5 未发布独立 cls 模型）
-- ✅ 中英文混排、emoji、多语言字典（18384 字符）
-- ✅ 单页 4-13 行 ~0.5-1.5s（M2 Mac, WASM 单线程）
-- ✅ 核心包 19KB ESM（远低于 SDD 4MB 预算，不含 onnxruntime-web peer）
-- ✅ 13 个单元测试覆盖几何 + CTC
-- ✅ 工作 example
-- ⏳ npm 发布（待完成回归测试）
+```bash
+pnpm install
+pnpm build          # build all packages
+pnpm test           # run unit tests
+pnpm example        # launch examples/browser at http://localhost:5181
+pnpm lint           # biome check
+pnpm format         # biome format --write
+```
 
-## Live demo
+Requires Node.js >= 20 and pnpm 10. Source is TypeScript; bundling is done with [`tsup`](https://tsup.egoist.dev/), tests with [`vitest`](https://vitest.dev/), linting and formatting with [Biome](https://biomejs.dev/).
 
-https://bent2685.github.io/ocr-web/
+## Browser support
 
-## 完整文档
+Modern Chromium, Firefox, and Safari with WebAssembly and `OffscreenCanvas` support. Multi-threaded WASM additionally requires `SharedArrayBuffer`, which in turn requires the page to be served with `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` headers; the engine falls back to single-threaded execution otherwise.
 
-详见 [`docs/`](./docs/README.md) — 包括 [快速开始](./docs/getting-started.md)、[各打包工具配置](./docs/installation.md)、[完整 API](./docs/api-core.md)、[PDF 用法](./docs/api-pdf.md)、[Worker vs 主线程](./docs/worker-vs-main.md)、[调参指南](./docs/tuning.md)、[排错](./docs/troubleshooting.md)、[食谱](./docs/recipes.md)、[架构原理](./docs/architecture.md)。
+## Contributing
 
-## 版本进展
+Issues and pull requests are welcome at [github.com/bent2685/ocr-web](https://github.com/bent2685/ocr-web). Please run `pnpm lint` and `pnpm test` before submitting a PR.
 
-- **v0.1.0** — det/rec 全链路（主线程版本）
-- **v0.2.0** — Web Worker（UI 不卡）+ rec 批处理 + 加载进度回调 + Live demo
-- **v0.3.0**（当前）— `@ocr-web/pdf` PDF 文本提取
-- **未来** — WebGPU / Node backend / PP-OCRv6 / PP-Structure
+## Acknowledgements
 
-完整 roadmap 见 [SDD §7](./ocr-web-sdd.md#7-路线图roadmap)。
+This project would not exist without the work of many others:
+
+- **[PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)** by Baidu — the PP-OCRv5 detection and recognition models, the dictionary, and the original Python reference implementation that this library mirrors.
+- **[ONNX Runtime Web](https://github.com/microsoft/onnxruntime)** by Microsoft — WebAssembly-based ONNX inference in the browser.
+- **[PDF.js (`pdfjs-dist`)](https://github.com/mozilla/pdf.js)** by Mozilla — used by `@ocr-web/pdf` to rasterize PDF pages.
+- **[jsDelivr](https://www.jsdelivr.com/)** — CORS-friendly CDN that serves the PP-OCRv5 ONNX assets and dictionary.
+- The DBNet, CRNN, and CTC research communities, whose algorithms this library implements end-to-end.
+
+## Feedback
+- **Issues:** Feel free to post any issues or questions in this repository.
+- **Friends & Links:** [LINUX DO](https://linux.do/) - A Chinese community for technology enthusiasts. This project is linked with and endorsed by LINUX DO.
+
 
 ## License
 
-MIT
+[MIT](./LICENSE) © ocr-web contributors.
+
+The PP-OCRv5 models redistributed in this repository are released by Baidu under the [Apache License 2.0](https://github.com/PaddlePaddle/PaddleOCR/blob/main/LICENSE).

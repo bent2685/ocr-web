@@ -1,17 +1,18 @@
-# ocr-web 文档
+# Documentation / 文档
 
-完整的使用指南。先看 [快速开始](./getting-started.md)，按需深入。
+- 🇬🇧 **[English](./en/getting-started.md)** — full guide
+- 🇨🇳 **[中文](./zh-CN/getting-started.md)** — 完整指南
 
-## 索引
+## Index / 索引
 
-| 文档 | 适合人群 |
-|---|---|
-| [快速开始](./getting-started.md) | 第一次使用，5 分钟跑通 |
-| [安装与构建配置](./installation.md) | 各种打包工具下的 wasm/worker 路径设置 |
-| [`@ocr-web/core` 完整 API](./api-core.md) | 写业务代码时查 |
-| [`@ocr-web/pdf` 完整 API](./api-pdf.md) | 处理 PDF 的人 |
-| [Worker 模式 vs 主线程](./worker-vs-main.md) | 决定用哪个 |
-| [调参指南](./tuning.md) | 识别效果不理想，要调阈值 |
-| [常见问题 / 报错排查](./troubleshooting.md) | 遇到问题先来这 |
-| [食谱 / 实战示例](./recipes.md) | React、Electron、批量处理 |
-| [架构与原理](./architecture.md) | 想知道内部怎么跑的 |
+| Topic | English | 中文 |
+|---|---|---|
+| Quick start | [Getting started](./en/getting-started.md) | [快速开始](./zh-CN/getting-started.md) |
+| Bundler setup | [Installation](./en/installation.md) | [安装与构建配置](./zh-CN/installation.md) |
+| `@ocr-web/core` API | [api-core](./en/api-core.md) | [api-core](./zh-CN/api-core.md) |
+| `@ocr-web/pdf` API | [api-pdf](./en/api-pdf.md) | [api-pdf](./zh-CN/api-pdf.md) |
+| Worker vs main thread | [worker-vs-main](./en/worker-vs-main.md) | [worker-vs-main](./zh-CN/worker-vs-main.md) |
+| Tuning | [tuning](./en/tuning.md) | [调参指南](./zh-CN/tuning.md) |
+| Troubleshooting | [troubleshooting](./en/troubleshooting.md) | [常见问题](./zh-CN/troubleshooting.md) |
+| Recipes | [recipes](./en/recipes.md) | [食谱](./zh-CN/recipes.md) |
+| Architecture | [architecture](./en/architecture.md) | [架构与原理](./zh-CN/architecture.md) |
