@@ -25,8 +25,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @ocr-web/core build
-      - run: pnpm --filter @ocr-web/models-ppocrv5 build
+      - run: pnpm -r --filter "./packages/*" build
       - name: Build example
         env:
           GITHUB_PAGES: "1"
